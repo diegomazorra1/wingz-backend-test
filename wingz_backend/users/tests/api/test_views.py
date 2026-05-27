@@ -36,5 +36,9 @@ class TestUserViewSet:
 
         assert response.data == {
             "url": f"http://testserver/api/users/{user.pk}/",
+            "id": user.id,
+            "email": user.email,
             "name": user.name,
+            "phone_number": user.phone_number,
+            "role": user.role,
         }
