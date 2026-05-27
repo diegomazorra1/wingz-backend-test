@@ -40,3 +40,21 @@ def test_ride_serializer_keeps_generated_addresses_read_only(user):
     assert serializer.is_valid(), serializer.errors
     assert "pickup_address" not in serializer.validated_data
     assert "dropoff_address" not in serializer.validated_data
+
+
+def test_ride_serializer_builds_pickup_location_from_coordinates(user):
+    latitude = 37.774900
+    longitude = -122.419400
+    serializer = RideSerializer(
+        data={
+            "passenger": user.pk,
+            "pickup_latitude": str(latitude),
+            "pickup_longitude": str(longitude),
+        },
+    )
+
+    assert serializer.is_valid(), serializer.errors
+    ride = serializer.save()
+
+    assert ride.pickup_location.x == longitude
+    assert ride.pickup_location.y == latitude
