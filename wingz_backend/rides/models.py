@@ -82,3 +82,22 @@ class Ride(models.Model):
 
     def __str__(self) -> str:
         return f"Ride #{self.pk} - {self.status}"
+
+
+class RideEvent(models.Model):
+    ride = models.ForeignKey(
+        Ride,
+        on_delete=models.CASCADE,
+        related_name="events",
+    )
+    description = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+        indexes = [
+            models.Index(fields=["ride", "created_at"], name="ride_event_time_idx"),
+        ]
+
+    def __str__(self) -> str:
+        return f"Ride #{self.ride_id} - {self.description}"

@@ -5,6 +5,7 @@ from factory import SubFactory
 from factory.django import DjangoModelFactory
 
 from wingz_backend.rides.models import Ride
+from wingz_backend.rides.models import RideEvent
 from wingz_backend.users.tests.factories import UserFactory
 
 
@@ -26,3 +27,11 @@ class RideFactory(DjangoModelFactory[Ride]):
 
     class Meta:
         model = Ride
+
+
+class RideEventFactory(DjangoModelFactory[RideEvent]):
+    ride = SubFactory(RideFactory)
+    description = Faker("sentence")
+
+    class Meta:
+        model = RideEvent
