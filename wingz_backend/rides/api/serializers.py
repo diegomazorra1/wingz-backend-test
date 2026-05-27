@@ -2,6 +2,7 @@ from django.contrib.gis.geos import Point
 from rest_framework import serializers
 
 from wingz_backend.rides.models import Ride
+from wingz_backend.rides.models import RideEvent
 
 
 class RideSerializer(serializers.ModelSerializer[Ride]):
@@ -39,11 +40,22 @@ class RideSerializer(serializers.ModelSerializer[Ride]):
 
     def create(self, validated_data):
         self._set_pickup_location(validated_data)
-        return super().create(validated_data)
+        ride = super().create(validated_data)
+        RideEvent.objects.create(ride=ride, description="Ride created")
+        return ride
 
     def update(self, instance, validated_data):
+        previous_status = instance.status
         self._set_pickup_location(validated_data, instance)
-        return super().update(instance, validated_data)
+        ride = super().update(instance, validated_data)
+
+        if previous_status != ride.status:
+            RideEvent.objects.create(
+                ride=ride,
+                description=f"Status changed to {ride.status}",
+            )
+
+        return ride
 
     def _set_pickup_location(self, validated_data, instance=None):
         latitude = validated_data.get(
