@@ -17,6 +17,12 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
   build-essential \
   # psycopg dependencies
   libpq-dev \
+  # GeoDjango/PostGIS runtime dependencies
+  binutils \
+  gdal-bin \
+  libgdal-dev \
+  libgeos-dev \
+  libproj-dev \
   gettext \
   wait-for-it
 
