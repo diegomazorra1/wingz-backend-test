@@ -7,6 +7,15 @@ A Django REST Framework API for managing ride-booking workflows, including user 
 
 License: MIT
 
+## Implemented Features
+
+- Ride CRUD through the API
+- Filtering rides by status and rider email
+- Sorting rides by pickup time
+- Sorting rides by distance to pickup using PostGIS
+- Ride event history for recent status changes
+- Bonus SQL report for trips longer than one hour
+
 ## Running the Project
 
 This project uses Docker Compose through `make` commands for local development.
@@ -67,6 +76,12 @@ PostGIS powers the `distance_to_pickup` sort. When rides include pickup
 latitude and longitude, the API stores them as a geospatial point and can return
 the closest pickups to a driver's current location.
 
+Example:
+
+```text
+GET /api/rides/?sort=distance_to_pickup&latitude=40.7128&longitude=-74.0060
+```
+
 ## Useful Commands
 
 List all available commands:
@@ -87,6 +102,9 @@ Run tests:
 make test
 ```
 
+Tests cover the main ride API flows, including filtering, sorting, coordinate
+validation, and ride event behavior.
+
 Remove containers and volumes:
 
 ```bash
@@ -95,8 +113,8 @@ make prune
 
 ## Bonus SQL Report
 
-Raw SQL report for the count of trips that took more than one hour from pickup
-to dropoff, grouped by month and driver:
+This query covers the optional report requirement. It counts trips that took
+more than one hour from pickup to dropoff, grouped by month and driver:
 
 ```sql
 WITH trip_events AS (
