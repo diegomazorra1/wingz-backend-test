@@ -31,6 +31,7 @@ class TestUserAdmin:
             url,
             data={
                 "email": "new-admin@example.com",
+                "role": User.Role.PASSENGER,
                 "password1": "My_R@ndom-P@ssw0rd",
                 "password2": "My_R@ndom-P@ssw0rd",
             },
