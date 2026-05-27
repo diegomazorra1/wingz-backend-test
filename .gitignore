@@ -1,0 +1,72 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg
+*.egg-info/
+.eggs/
+build/
+dist/
+wheels/
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# Django/local runtime
+.env
+.env.*
+!.env.example
+*.sqlite3
+db.sqlite3
+media/
+staticfiles/
+
+# Test, coverage, and type-check caches
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+.tox/
+
+# Logs and process files
+*.log
+logs/
+*.pid
+*.pid.lock
+
+# Translations
+*.mo
+*.pot
+
+# Node/frontend artifacts, if added later
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm/
+.eslintcache
+coverage/
+
+# Docker/devcontainer local state
+.devcontainer/bash_history
+
+# Editors and IDEs
+.vscode/
+.idea/
+*.code-workspace
+*.iws
+.ropeproject/
+
+# OS files
+.DS_Store
+._*
+Thumbs.db
+Desktop.ini
