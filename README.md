@@ -92,3 +92,46 @@ Remove containers and volumes:
 ```bash
 make prune
 ```
+
+## Bonus SQL Report
+
+Raw SQL report for the count of trips that took more than one hour from pickup
+to dropoff, grouped by month and driver:
+
+```sql
+WITH trip_events AS (
+  SELECT
+    ride_id,
+    MIN(created_at) FILTER (
+      WHERE description = 'Status changed to pickup'
+    ) AS pickup_at,
+    MIN(created_at) FILTER (
+      WHERE description = 'Status changed to dropoff'
+    ) AS dropoff_at
+  FROM rides_rideevent
+  WHERE description IN (
+    'Status changed to pickup',
+    'Status changed to dropoff'
+  )
+  GROUP BY ride_id
+)
+SELECT
+  TO_CHAR(DATE_TRUNC('month', trip_events.pickup_at), 'YYYY-MM') AS month,
+  COALESCE(NULLIF(driver.name, ''), driver.email) AS driver,
+  COUNT(*) AS "Count of Trips > 1 hr"
+FROM trip_events
+JOIN rides_ride AS ride
+  ON ride.id = trip_events.ride_id
+JOIN users_user AS driver
+  ON driver.id = ride.driver_id
+WHERE trip_events.pickup_at IS NOT NULL
+  AND trip_events.dropoff_at IS NOT NULL
+  AND trip_events.dropoff_at - trip_events.pickup_at > INTERVAL '1 hour'
+GROUP BY
+  DATE_TRUNC('month', trip_events.pickup_at),
+  driver.name,
+  driver.email
+ORDER BY
+  DATE_TRUNC('month', trip_events.pickup_at),
+  driver;
+```
