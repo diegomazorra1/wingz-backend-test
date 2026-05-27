@@ -1,6 +1,7 @@
 from django.contrib.gis.geos import Point
 from rest_framework import serializers
 
+from wingz_backend.rides.api.errors import InvalidRideStatusTransition
 from wingz_backend.rides.models import Ride
 from wingz_backend.rides.models import RideEvent
 
@@ -61,6 +62,7 @@ class RideSerializer(serializers.ModelSerializer[Ride]):
 
     def update(self, instance, validated_data):
         previous_status = instance.status
+        self._validate_status_transition(previous_status, validated_data.get("status"))
         self._set_pickup_location(validated_data, instance)
         ride = super().update(instance, validated_data)
 
@@ -94,3 +96,48 @@ class RideSerializer(serializers.ModelSerializer[Ride]):
     def get_todays_ride_events(self, ride):
         todays_events = getattr(ride, "todays_ride_events", [])
         return RideEventSerializer(todays_events, many=True).data
+
+    def validate(self, attrs):
+        self._validate_coordinate_pair(
+            attrs,
+            latitude_field="pickup_latitude",
+            longitude_field="pickup_longitude",
+        )
+        self._validate_coordinate_pair(
+            attrs,
+            latitude_field="dropoff_latitude",
+            longitude_field="dropoff_longitude",
+        )
+
+        return super().validate(attrs)
+
+    def _validate_coordinate_pair(self, attrs, *, latitude_field, longitude_field):
+        latitude = self._get_effective_value(attrs, latitude_field)
+        longitude = self._get_effective_value(attrs, longitude_field)
+
+        if latitude is None and longitude is not None:
+            msg = f"{latitude_field} is required with {longitude_field}."
+            raise serializers.ValidationError(
+                {latitude_field: msg},
+            )
+
+        if longitude is None and latitude is not None:
+            msg = f"{longitude_field} is required with {latitude_field}."
+            raise serializers.ValidationError(
+                {longitude_field: msg},
+            )
+
+    def _get_effective_value(self, attrs, field):
+        if field in attrs:
+            return attrs[field]
+
+        return getattr(self.instance, field, None)
+
+    def _validate_status_transition(self, previous_status, requested_status):
+        terminal_statuses = {Ride.Status.CANCELED, Ride.Status.COMPLETED}
+        if (
+            requested_status
+            and requested_status != previous_status
+            and previous_status in terminal_statuses
+        ):
+            raise InvalidRideStatusTransition(previous_status, requested_status)

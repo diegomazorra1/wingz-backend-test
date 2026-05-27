@@ -1,7 +1,12 @@
+import pytest
+
+from wingz_backend.rides.api.errors import InvalidRideStatusTransition
 from wingz_backend.rides.api.serializers import RideSerializer
 from wingz_backend.rides.models import Ride
 from wingz_backend.rides.models import RideEvent
 from wingz_backend.rides.tests.factories import RideFactory
+
+HTTP_409_CONFLICT = 409
 
 
 def test_ride_serializer_fields():
@@ -17,13 +22,13 @@ def test_ride_serializer_fields():
         "dropoff_latitude",
         "dropoff_longitude",
         "scheduled_at",
-            "status",
-            "fare_amount",
-            "notes",
-            "todays_ride_events",
-            "created_at",
-            "updated_at",
-            "url",
+        "status",
+        "fare_amount",
+        "notes",
+        "todays_ride_events",
+        "created_at",
+        "updated_at",
+        "url",
     ]
 
 
@@ -92,7 +97,7 @@ def test_ride_serializer_creates_ride_event_on_status_change(db):
 
     assert RideEvent.objects.filter(
         ride=ride,
-        description=f"Status changed to {Ride.Status.EN_ROUTE}"",
+        description=f"Status changed to {Ride.Status.EN_ROUTE}",
     ).exists()
 
 
@@ -108,3 +113,30 @@ def test_ride_serializer_does_not_create_event_without_status_change(db):
     serializer.save()
 
     assert not RideEvent.objects.filter(ride=ride).exists()
+
+
+def test_ride_serializer_requires_pickup_coordinate_pair(user):
+    serializer = RideSerializer(
+        data={
+            "passenger": user.pk,
+            "pickup_latitude": "37.774900",
+        },
+    )
+
+    assert not serializer.is_valid()
+    assert "pickup_longitude" in serializer.errors
+
+
+def test_ride_serializer_rejects_terminal_status_transition(db):
+    ride = RideFactory.create(status=Ride.Status.COMPLETED)
+    serializer = RideSerializer(
+        ride,
+        data={"status": Ride.Status.PICKUP},
+        partial=True,
+    )
+
+    assert serializer.is_valid(), serializer.errors
+    with pytest.raises(InvalidRideStatusTransition) as exc_info:
+        serializer.save()
+
+    assert exc_info.value.status_code == HTTP_409_CONFLICT

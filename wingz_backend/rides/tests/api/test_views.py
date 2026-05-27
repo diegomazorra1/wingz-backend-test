@@ -114,6 +114,43 @@ def test_get_queryset_requires_gps_position_for_distance_sort(admin_user: User):
         view.get_queryset()
 
 
+def test_get_queryset_rejects_invalid_status(admin_user: User):
+    view = RideViewSet()
+    request = APIRequestFactory().get("/fake-url/", {"status": "invalid"})
+    request.user = admin_user
+    view.request = request
+
+    with pytest.raises(ValidationError):
+        view.get_queryset()
+
+
+def test_get_queryset_rejects_invalid_sort(admin_user: User):
+    view = RideViewSet()
+    request = APIRequestFactory().get("/fake-url/", {"sort": "invalid"})
+    request.user = admin_user
+    view.request = request
+
+    with pytest.raises(ValidationError):
+        view.get_queryset()
+
+
+def test_get_queryset_rejects_invalid_distance_sort_coordinate(admin_user: User):
+    view = RideViewSet()
+    request = APIRequestFactory().get(
+        "/fake-url/",
+        {
+            "sort": "distance_to_pickup",
+            "latitude": "not-a-number",
+            "longitude": "-122.419400",
+        },
+    )
+    request.user = admin_user
+    view.request = request
+
+    with pytest.raises(ValidationError):
+        view.get_queryset()
+
+
 def test_ride_list_is_paginated(admin_client):
     rides = RideFactory.create_batch(2)
     url = reverse("api:ride-list")

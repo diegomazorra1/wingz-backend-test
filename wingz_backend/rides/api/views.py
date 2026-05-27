@@ -71,6 +71,8 @@ class RideViewSet(ModelViewSet):
         rider_email = query_params.get("rider_email")
         sort = query_params.get("sort")
 
+        self._validate_query_params(status, sort)
+
         if status:
             queryset = queryset.filter(status=status)
 
@@ -84,6 +86,15 @@ class RideViewSet(ModelViewSet):
             queryset = self._order_by_distance_to_pickup(queryset, query_params)
 
         return queryset
+
+    def _validate_query_params(self, status, sort):
+        if status and status not in Ride.Status.values:
+            raise ValidationError({"status": "Invalid ride status."})
+
+        valid_sort_values = {SORT_PICKUP_TIME, SORT_DISTANCE_TO_PICKUP}
+        if sort and sort not in valid_sort_values:
+            msg = "Invalid sort option. Use pickup_time or distance_to_pickup."
+            raise ValidationError({"sort": msg})
 
     def _with_last_24_hours_ride_events(self, queryset):
         start = timezone.now() - timedelta(hours=24)
@@ -119,5 +130,4 @@ class RideViewSet(ModelViewSet):
         try:
             return float(value)
         except ValueError as exc:
-            msg = f"{name} must be a valid number."
-            raise ValidationError({name: msg}) from exc
+            raise ValidationError({name: f"{name} must be a valid number."}) from exc
