@@ -1,9 +1,9 @@
-
 from typing import ClassVar
 
 from django.contrib.auth.models import AbstractUser
 from django.db.models import CharField
 from django.db.models import EmailField
+from django.db.models import TextChoices
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
@@ -17,13 +17,23 @@ class User(AbstractUser):
     check forms.SignupForm and forms.SocialSignupForms accordingly.
     """
 
+    class Role(TextChoices):
+        PASSENGER = "passenger", _("Passenger")
+        DRIVER = "driver", _("Driver")
+
     # First and last name do not cover name patterns around the globe
     name = CharField(_("Name of User"), blank=True, max_length=255)
+    phone_number = CharField(_("phone number"), blank=True, max_length=32)
+    role = CharField(
+        _("role"),
+        choices=Role.choices,
+        default=Role.PASSENGER,
+        max_length=20,
+    )
     first_name = None  # type: ignore[assignment]
     last_name = None  # type: ignore[assignment]
     email = EmailField(_("email address"), unique=True)
     username = None  # type: ignore[assignment]
-
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
