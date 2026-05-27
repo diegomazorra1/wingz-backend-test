@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.contrib.gis.db import models as gis_models
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -38,6 +39,12 @@ class Ride(models.Model):
         max_digits=9,
         null=True,
     )
+    pickup_location = gis_models.PointField(
+        blank=True,
+        geography=True,
+        null=True,
+        spatial_index=True,
+    )
     dropoff_latitude = models.DecimalField(
         blank=True,
         decimal_places=6,
@@ -69,6 +76,9 @@ class Ride(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["scheduled_at"], name="ride_pickup_time_idx"),
+        ]
 
     def __str__(self) -> str:
         return f"Ride #{self.pk} - {self.status}"
