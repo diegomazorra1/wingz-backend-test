@@ -1,9 +1,11 @@
 from django.contrib.gis.geos import Point
 from rest_framework import serializers
 
-from wingz_backend.rides.api.errors import InvalidRideStatusTransition
 from wingz_backend.rides.models import Ride
 from wingz_backend.rides.models import RideEvent
+from wingz_backend.rides.services import record_ride_created
+from wingz_backend.rides.services import record_ride_status_changed
+from wingz_backend.rides.services import validate_ride_status_transition
 
 
 class RideEventSerializer(serializers.ModelSerializer[RideEvent]):
@@ -57,20 +59,17 @@ class RideSerializer(serializers.ModelSerializer[Ride]):
     def create(self, validated_data):
         self._set_pickup_location(validated_data)
         ride = super().create(validated_data)
-        RideEvent.objects.create(ride=ride, description="Ride created")
+        record_ride_created(ride)
         return ride
 
     def update(self, instance, validated_data):
         previous_status = instance.status
-        self._validate_status_transition(previous_status, validated_data.get("status"))
+        validate_ride_status_transition(previous_status, validated_data.get("status"))
         self._set_pickup_location(validated_data, instance)
         ride = super().update(instance, validated_data)
 
         if previous_status != ride.status:
-            RideEvent.objects.create(
-                ride=ride,
-                description=f"Status changed to {ride.status}",
-            )
+            record_ride_status_changed(ride)
 
         return ride
 
@@ -98,46 +97,46 @@ class RideSerializer(serializers.ModelSerializer[Ride]):
         return RideEventSerializer(todays_events, many=True).data
 
     def validate(self, attrs):
-        self._validate_coordinate_pair(
-            attrs,
-            latitude_field="pickup_latitude",
-            longitude_field="pickup_longitude",
+        pickup_latitude = attrs.get(
+            "pickup_latitude",
+            getattr(self.instance, "pickup_latitude", None),
         )
-        self._validate_coordinate_pair(
-            attrs,
-            latitude_field="dropoff_latitude",
-            longitude_field="dropoff_longitude",
+        pickup_longitude = attrs.get(
+            "pickup_longitude",
+            getattr(self.instance, "pickup_longitude", None),
         )
+        dropoff_latitude = attrs.get(
+            "dropoff_latitude",
+            getattr(self.instance, "dropoff_latitude", None),
+        )
+        dropoff_longitude = attrs.get(
+            "dropoff_longitude",
+            getattr(self.instance, "dropoff_longitude", None),
+        )
+
+        errors = {}
+
+        if pickup_latitude is None and pickup_longitude is not None:
+            errors["pickup_latitude"] = (
+                "pickup_latitude is required with pickup_longitude."
+            )
+
+        if pickup_longitude is None and pickup_latitude is not None:
+            errors["pickup_longitude"] = (
+                "pickup_longitude is required with pickup_latitude."
+            )
+
+        if dropoff_latitude is None and dropoff_longitude is not None:
+            errors["dropoff_latitude"] = (
+                "dropoff_latitude is required with dropoff_longitude."
+            )
+
+        if dropoff_longitude is None and dropoff_latitude is not None:
+            errors["dropoff_longitude"] = (
+                "dropoff_longitude is required with dropoff_latitude."
+            )
+
+        if errors:
+            raise serializers.ValidationError(errors)
 
         return super().validate(attrs)
-
-    def _validate_coordinate_pair(self, attrs, *, latitude_field, longitude_field):
-        latitude = self._get_effective_value(attrs, latitude_field)
-        longitude = self._get_effective_value(attrs, longitude_field)
-
-        if latitude is None and longitude is not None:
-            msg = f"{latitude_field} is required with {longitude_field}."
-            raise serializers.ValidationError(
-                {latitude_field: msg},
-            )
-
-        if longitude is None and latitude is not None:
-            msg = f"{longitude_field} is required with {latitude_field}."
-            raise serializers.ValidationError(
-                {longitude_field: msg},
-            )
-
-    def _get_effective_value(self, attrs, field):
-        if field in attrs:
-            return attrs[field]
-
-        return getattr(self.instance, field, None)
-
-    def _validate_status_transition(self, previous_status, requested_status):
-        terminal_statuses = {Ride.Status.CANCELED, Ride.Status.COMPLETED}
-        if (
-            requested_status
-            and requested_status != previous_status
-            and previous_status in terminal_statuses
-        ):
-            raise InvalidRideStatusTransition(previous_status, requested_status)
