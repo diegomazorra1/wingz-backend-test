@@ -1,5 +1,9 @@
+from datetime import timedelta
+
 from django.contrib.gis.db.models.functions import Distance
 from django.contrib.gis.geos import Point
+from django.db.models import Prefetch
+from django.utils import timezone
 from drf_spectacular.utils import OpenApiParameter
 from drf_spectacular.utils import extend_schema
 from drf_spectacular.utils import extend_schema_view
@@ -8,6 +12,7 @@ from rest_framework.viewsets import ModelViewSet
 
 from wingz_backend.rides.api.serializers import RideSerializer
 from wingz_backend.rides.models import Ride
+from wingz_backend.rides.models import RideEvent
 
 SORT_DISTANCE_TO_PICKUP = "distance_to_pickup"
 SORT_PICKUP_TIME = "pickup_time"
@@ -60,7 +65,7 @@ class RideViewSet(ModelViewSet):
     lookup_field = "pk"
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        queryset = self._with_last_24_hours_ride_events(super().get_queryset())
         query_params = getattr(self.request, "query_params", self.request.GET)
         status = query_params.get("status")
         rider_email = query_params.get("rider_email")
@@ -79,6 +84,20 @@ class RideViewSet(ModelViewSet):
             queryset = self._order_by_distance_to_pickup(queryset, query_params)
 
         return queryset
+
+    def _with_last_24_hours_ride_events(self, queryset):
+        start = timezone.now() - timedelta(hours=24)
+        recent_events = RideEvent.objects.filter(
+            created_at__gte=start,
+        ).order_by("-created_at", "-id")
+
+        return queryset.prefetch_related(
+            Prefetch(
+                "events",
+                queryset=recent_events,
+                to_attr="todays_ride_events",
+            ),
+        )
 
     def _order_by_distance_to_pickup(self, queryset, query_params):
         latitude = self._get_float_query_param(query_params, "latitude")

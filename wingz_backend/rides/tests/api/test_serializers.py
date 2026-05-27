@@ -17,12 +17,13 @@ def test_ride_serializer_fields():
         "dropoff_latitude",
         "dropoff_longitude",
         "scheduled_at",
-        "status",
-        "fare_amount",
-        "notes",
-        "created_at",
-        "updated_at",
-        "url",
+            "status",
+            "fare_amount",
+            "notes",
+            "todays_ride_events",
+            "created_at",
+            "updated_at",
+            "url",
     ]
 
 
