@@ -5,14 +5,21 @@ from django.urls import reverse
 
 
 @pytest.mark.django_db
-def test_api_docs_accessible_by_anonymous_users(client):
+def test_api_docs_accessible_by_admin_users(admin_client):
     url = reverse("api-docs")
-    response = client.get(url)
+    response = admin_client.get(url)
     assert response.status_code == HTTPStatus.OK
 
 
 @pytest.mark.django_db
-def test_api_schema_generated_successfully(client):
-    url = reverse("api-schema")
+def test_api_docs_not_accessible_by_anonymous_users(client):
+    url = reverse("api-docs")
     response = client.get(url)
+    assert response.status_code == HTTPStatus.FORBIDDEN
+
+
+@pytest.mark.django_db
+def test_api_schema_generated_successfully(admin_client):
+    url = reverse("api-schema")
+    response = admin_client.get(url)
     assert response.status_code == HTTPStatus.OK
