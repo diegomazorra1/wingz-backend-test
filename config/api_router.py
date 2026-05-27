@@ -2,10 +2,12 @@ from django.conf import settings
 from rest_framework.routers import DefaultRouter
 from rest_framework.routers import SimpleRouter
 
+from wingz_backend.rides.api.views import RideViewSet
 from wingz_backend.users.api.views import UserViewSet
 
 router = DefaultRouter() if settings.DEBUG else SimpleRouter()
 
+router.register("rides", RideViewSet)
 router.register("users", UserViewSet)
 
 
