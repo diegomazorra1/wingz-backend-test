@@ -24,8 +24,8 @@ class Ride(models.Model):
         on_delete=models.SET_NULL,
         related_name="assigned_rides",
     )
-    pickup_address = models.CharField(max_length=255)
-    dropoff_address = models.CharField(max_length=255)
+    pickup_address = models.CharField(blank=True, max_length=255)
+    dropoff_address = models.CharField(blank=True, max_length=255)
     pickup_latitude = models.DecimalField(
         blank=True,
         decimal_places=6,

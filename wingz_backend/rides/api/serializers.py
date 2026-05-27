@@ -24,7 +24,14 @@ class RideSerializer(serializers.ModelSerializer[Ride]):
             "updated_at",
             "url",
         ]
-        read_only_fields = ["id", "created_at", "updated_at", "url"]
+        read_only_fields = [
+            "id",
+            "pickup_address",
+            "dropoff_address",
+            "created_at",
+            "updated_at",
+            "url",
+        ]
         extra_kwargs = {
             "url": {"view_name": "api:ride-detail", "lookup_field": "pk"},
         }

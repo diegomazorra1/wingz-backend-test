@@ -22,3 +22,21 @@ def test_ride_serializer_fields():
         "updated_at",
         "url",
     ]
+
+
+def test_ride_serializer_keeps_generated_addresses_read_only(user):
+    serializer = RideSerializer(
+        data={
+            "passenger": user.pk,
+            "pickup_address": "Ignored pickup address",
+            "dropoff_address": "Ignored dropoff address",
+            "pickup_latitude": "37.774900",
+            "pickup_longitude": "-122.419400",
+            "dropoff_latitude": "37.784900",
+            "dropoff_longitude": "-122.409400",
+        },
+    )
+
+    assert serializer.is_valid(), serializer.errors
+    assert "pickup_address" not in serializer.validated_data
+    assert "dropoff_address" not in serializer.validated_data
